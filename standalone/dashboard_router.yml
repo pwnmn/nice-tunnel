@@ -1,0 +1,9 @@
+http:
+  routers:
+    dashboard:
+      rule: "Host(`dashboard.${BASE_DOMAIN}`)"
+      tls:
+        certResolver: letsencrypt
+      service: api@internal
+      entryPoints:
+        - websecure

@@ -1,0 +1,41 @@
+log:
+  level: "DEBUG"
+
+api:
+  dashboard: true
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      # Adjust to your desired mail
+      email: ${EMAIL}
+      storage: ${USER_HOME}/.traefik/standalone/acme/acme.json
+      # Comment this to use the real letsencrytp server after verifying with the staging server
+      # Letsencrypt has a nasty rate limiting that will prevent from issuing new certificates after
+      # a few tries
+      caServer: https://acme-staging-v02.api.letsencrypt.org/directory
+      httpChallenge:
+        entryPoint: web
+
+tls:
+  options:
+    default:
+      minVersion: VersionTLS13
+
+providers:
+  file:
+    directory: ${USER_HOME}/.traefik/standalone/config
+    watch: true
+  docker: {}
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+  websecure:
+    address: ":443"

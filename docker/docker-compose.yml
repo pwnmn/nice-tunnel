@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:${TRAEFIK_VERSION}
+    container_name: traefik-reverse-proxy
+    restart: unless-stopped
+    # host.docker.internal points to the docker host. See https://github.com/moby/moby/pull/40007
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command:
+      - "--log.level=INFO"
+      # File provider for dynamic configuration
+      - "--providers.file.watch=true"
+      - "--providers.file.directory=/etc/traefik/config"
+      # Docker provider for dynamic configuration using labels
+      - "--providers.docker"
+      - "--providers.docker.exposedByDefault=false"
+      - "--api.dashboard=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      # ACME (Letsencrypt) configuration
+      - "--certificatesresolvers.letsencrypt.acme.email=${EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme/acme.json"
+      # Staging server is used by default to avoid rate limiting. Comment it out to generate proper certificates.
+      - "--certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      # Redirect http to https
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Docker socket is passed to enable dynamic docker configuration
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # ACME Json containing letsencrypt keys/certificates. Might want to move it to /etc folder
+      - $HOME/.traefik/acme:/etc/traefik/acme:rw
+      # Mounting traefik file config folder for dynamic configuration
+      - $HOME/.traefik/config:/etc/traefik/config:ro
+    labels:
+      # Enable routing to traefik dashboard on dashboard.${BASE_DOMAIN}
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.rule=Host(`dashboard.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.dashboard.tls=true"
+      - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.dashboard.service=api@internal"
