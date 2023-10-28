@@ -1,7 +1,7 @@
 #/bin/bash
 
 # Traefik version used. Can be increased with time
-traefik_version=2.9.1
+traefik_version=2.10.5
 # Contains script that will add dynamic forwarding rule using protocol, domain and port as parameters
 forwarding_script=nice_tunnel.py
 # Contains dynamic config to expose the traefik dashboard

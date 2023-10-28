@@ -7,9 +7,12 @@ services:
     restart: unless-stopped
     # host.docker.internal points to the docker host. See https://github.com/moby/moby/pull/40007
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - "localhost:host-gateway"
+    environment:
+      - CLOUDFLARE_EMAIL=${CLOUDFLARE_EMAIL}
+      - CLOUDFLARE_API_KEY=${CLOUDFLARE_API_KEY}
     command:
-      - "--log.level=INFO"
+      - "--log.level=DEBUG"
       # File provider for dynamic configuration
       - "--providers.file.watch=true"
       - "--providers.file.directory=/etc/traefik/config"
@@ -23,12 +26,14 @@ services:
       - "--certificatesresolvers.letsencrypt.acme.email=${EMAIL}"
       - "--certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme/acme.json"
       # Staging server is used by default to avoid rate limiting. Comment it out to generate proper certificates.
-      - "--certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      #- "--certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+      - "--certificatesresolvers.letsencrypt.acme.dnsChallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.dnsChallenge.provider=cloudflare"
       # Redirect http to https
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+#    networks:
+#      - traefik
     ports:
       - "80:80"
       - "443:443"
@@ -47,3 +52,10 @@ services:
       - "traefik.http.routers.dashboard.tls=true"
       - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
       - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.middlewares.basic-auth-dashboard.basicauth.users=${DASHBOARD_USER}:${DASHBOARD_PASSWORD}"
+      - "traefik.http.routers.dashboard.middlewares=basic-auth-dashboard"
+
+networks:
+  traefik:
+    name: traefik
+    external: true

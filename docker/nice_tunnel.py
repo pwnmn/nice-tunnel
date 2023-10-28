@@ -44,7 +44,7 @@ def create_traefik_config(protocol, host, port, tunnel_id):
                     'loadBalancer': {
                         'servers': [
                             {
-                                service_key: service_scheme + 'host.docker.internal' + ':' + port
+                                service_key: service_scheme + 'localhost' + ':' + port
                             }
                         ]
                     }

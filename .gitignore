@@ -2,3 +2,4 @@ acme.json
 traefik
 .idea
 .nice-tunnel.iml
+*.env
